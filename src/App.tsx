@@ -1,12 +1,14 @@
 import React, { useState } from "react"
-import { fetchQuestions } from "./API"
+import { fetchQuizQuestions } from "./API"
 
 //components
 import QuestionCard from "./components/QuestionCard"
 //types
 import { QuestionsState, Difficulty } from "./API"
+//styles
+import { GlobalStyle, Wrapper } from "./App.style"
 
-type AnswerObject = {
+export type AnswerObject = {
   question: string
   answer: string
   correct: boolean
@@ -29,7 +31,10 @@ const App = () => {
     setLoading(true)
     setGameOver(false)
 
-    const newQuestions = await fetchQuestions(TOTAL_QUESTIONS, Difficulty.EASY)
+    const newQuestions = await fetchQuizQuestions(
+      TOTAL_QUESTIONS,
+      Difficulty.EASY
+    )
 
     setQuestions(newQuestions)
     setScore(0)
@@ -38,33 +43,69 @@ const App = () => {
     setLoading(false)
   }
 
-  const checkAnswer = (e: React.MouseEvent<HTMLButtonElement>) => {}
-  const nextQuestion = () => {}
+  const checkAnswer = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!gameOver) {
+      //User answer
+      const answer = e.currentTarget.value
+      //check selected answer against correct answer
+      const correct = questions[number].correct_answer === answer
+      //Add score if answer is correct
+      if (correct) setScore((prev) => prev + 1)
+      //save the answer in the array for user answer
+      const answerObject = {
+        question: questions[number].question,
+        answer,
+        correct,
+        correctAnswer: questions[number].correct_answer,
+      }
+      setUserAnswers((prev) => [...prev, answerObject])
+    }
+  }
+  const nextQuestion = () => {
+    //move on to the next question if not the last question
+    const nextQuestion = number + 1
+
+    if (nextQuestion === TOTAL_QUESTIONS) {
+      setGameOver(true)
+    } else {
+      setNumber(nextQuestion)
+    }
+  }
 
   return (
-    <div className="App">
-      <h1>Quiz App</h1>
-      {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
-        <button className="start" onClick={getAPI}>
-          Start
-        </button>
-      ) : null}
-      {!gameOver ? <p className="score">Score: {score}</p> : null}
-      {loading ? <p>Loading Questions...</p> : null}
-      {!loading && !gameOver && (
-        <QuestionCard
-          questionNr={number + 1}
-          totalQuestions={TOTAL_QUESTIONS}
-          question={questions[number].question}
-          answers={questions[number].answers}
-          userAnswer={userAnswers ? userAnswers[number] : undefined}
-          callback={checkAnswer}
-        />
-      )}
-      <button className="next" onClick={nextQuestion}>
-        Next Question
-      </button>
-    </div>
+    <>
+      <GlobalStyle />
+      <Wrapper>
+        <div className="App">
+          <h1>Quiz App</h1>
+          {gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
+            <button className="start" onClick={getAPI}>
+              Start
+            </button>
+          ) : null}
+          {!gameOver ? <p className="score">Score: {score}</p> : null}
+          {loading ? <p>Loading Questions...</p> : null}
+          {!loading && !gameOver && (
+            <QuestionCard
+              questionNr={number + 1}
+              totalQuestions={TOTAL_QUESTIONS}
+              question={questions[number].question}
+              answers={questions[number].answers}
+              userAnswer={userAnswers ? userAnswers[number] : undefined}
+              callback={checkAnswer}
+            />
+          )}
+          {!gameOver &&
+          !loading &&
+          userAnswers.length === number + 1 &&
+          number !== TOTAL_QUESTIONS - 1 ? (
+            <button className="next" onClick={nextQuestion}>
+              Next Question
+            </button>
+          ) : null}
+        </div>
+      </Wrapper>
+    </>
   )
 }
 
